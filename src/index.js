@@ -1,13 +1,10 @@
-// { 
-//   "id": 1,
-//   "name": "Mr. Bonkers",
-//   "isGoodDog": true,
-//   "image": "https://curriculum-content.s3.amazonaws.com/js/woof-woof/dog_1.jpg"
-// }
 
 const dogURL = 'http://localhost:3000/pups'
 let dogBar // cannot set and define it in global because index.js script is in the header
-
+headers = {
+  'Content-Type': 'application/json',
+  'Accept': 'application/json' 
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('DOM fully loaded and parsed');
@@ -20,7 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // dogCard()
 });
 
-
 // fetch dogs // put on DOM
 
 function getDogs () {
@@ -29,42 +25,13 @@ function getDogs () {
   .then(dogs => {
     dogs.forEach(dog => {
       addDogs(dog)
-
-    
     });
   })
 }
 
 function addDogs (dog) {
   addToDogBar(dog)
-  dogCard(dog)
-  // addListenerToDogSpan(dog)
-  // if button in dogBar is clicked run code below:
-  
-
-  // const dogInfo = document.getElementById('dog-info')
-  // span.addEventListener('click', (e) => {
-  //   let doggo = e.target
-  //   console.log(doggo.dataset.name)
-  //   const dogInfo = document.getElementById('dog-info')
-  //   // dogCard(doggo)
-    
-  //   // unhide target div and display in center? hmm would that work. 
-  //   // get info from span dataset
-  //   // display that info 
-
 }
-
-// function addListenerToDogSpan (dogTarget) {
-//   const selectedDog = document.querySelector(`[data-id='${dogTarget.dataset.id}']`)
-
-//   selectedDog.addEventListener('click', (e) => {
-//     console.log(e.target)
-//     dogCard(e.target)
-//   })
-
-
-// }
 
 function addToDogBar(dog) {
   const span = document.createElement('span')
@@ -73,15 +40,9 @@ function addToDogBar(dog) {
   span.textContent = dog.name
   span.dataset.id = dog.id
   span.style.cursor = 'pointer'
-  span.addEventListener('click', (e) => {
-    const dogDiv = document.getElementById(`${dog.id}`)
-    if (e.target.dataset.id == dogDiv.id) {
-      dogDiv.style.display = "block" 
-
-      console.log(dogDiv)
-    } else if (e.target.dataset.id !== dogDiv.id) {
-      dogDiv.style.display = "none"
-    }
+  span.addEventListener('click', () => {
+    dogInfo.innerHTML = ""
+    dogCard(dog)
     
   })
   
@@ -90,37 +51,69 @@ function addToDogBar(dog) {
 
 function dogCard (dog) {
   const dogInfo = document.getElementById('dog-info')
+  dogInfo.dataset.id = dog.id
+  
 
-  const dogDiv = document.createElement('div')
-  dogDiv.id = dog.id
-  dogDiv.dataset.id = dog.id
-  dogDiv.style.display = "none"
-  dogDiv.innerHTML = `
+  dogInfo.innerHTML = `
     <img src="${dog.image}">
     <h2>${dog.name}</h2>
-    <button class="doggoAlignment">${dog.isGoodDog}</button>
+    <button class="doggoAlignment">${dogAlignment(dog)}</button>
   `
-  dogInfo.append(dogDiv)
 
-  // dogInfo.dataset.id = dog.id
+  dogInfo.addEventListener('click', (e) => {
+    
+    if (e.target.className === "doggoAlignment") {
+      
+      const parentDiv = e.target.parentNode
+      let status = parentDiv.getElementsByClassName('doggoAlignment')
+      console.log(status.textContent)
+      // const attributeTarget = parentDiv.
+      updateDogAlignment(status.parentNode)
+      
+      console.log(parentDiv.dataset.id)
 
-  // dogInfo.innerHTML = `
-  //   <img src="${dog.image}">
-  //   <h2>${dog.name}</h2>
-  //   <button class="doggoAlignment">${dog.isGoodDog}</button>
-  // `
+    }
+    // should cause a patch request to initiate and thus change the attribute thus triggering ternary above. 
+    
+  })
+}
+
+function dogAlignment (dog) {
+  let button = document.getElementsByClassName('doggoAlignment')
+  let alignment = dog.isGoodDog ? button.textContent = "Good Dog" : button.textContent = "Bad Dog"
+  return alignment
+}
+
+function updateDogAlignment (dog) {
+  console.log("from updateDogAlignment fn:", dog.dataset.id)
+  fetch(`${dogURL}/${dog.dataset.id}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(dog.isGoodDog)
+    
+  })
+  .then(resp => resp.json())
+  .then(dog => {
+    toggleAlignment(dog)
+  })
+}
+
+function toggleAlignment (dog) {
+  let button = document.getElementsByClassName('doggoAlignment')
+  let statusChange = dog.textContent = "Good Dog" ? button.textContent = "Bad Dog" : button.textContent = "Good Dog"
+  return statusChange
 }
 
 
-//   return displayDog
-// }
-
-// create html diplay for dogInfo
 
 
 
-// When a user clicks on a pup's span in the dog bar, that pup's info (image, name, and isGoodDog status) should show up in the div with the id of "dog-info". When you have the pup's information, the dog info div should have the following children:
+// add listener to button 
+// // but text changes. button.textContent change? maybe
+// // make patch request url interpolation 
 
-// an img tag with the pup's image url
-// an h2 with the pup's name
-// a button that says "Good Dog!" or "Bad Dog!" based on whether isGoodDog is true or false. Ex: <img src=dog_image_url> <h2>Mr. Bonkers</h2> <button>Good Dog!</button>
+// When a user clicks the Good Dog/Bad Dog button, two things should happen:
+
+// The button's text should change from Good to Bad or Bad to Good
+// The corresponding pup object in the database should be updated to reflect the new isGoodDog value
+// Please note, you can update a dog by making a PATCH request to /pups/:id
